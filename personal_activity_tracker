@@ -21,42 +21,62 @@ def init_db():
 
 # Add activity
 def add_activity(name, duration):
-    conn = sqlite3.connect("activity_tracker.db")
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO activities (name, duration, date) VALUES (?, ?, ?)",
-                   (name, duration, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect("activity_tracker.db")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO activities (name, duration, date) VALUES (?, ?, ?)",
+                       (name, duration, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        conn.close()
 
 # View all activities
 def view_activities():
-    conn = sqlite3.connect("activity_tracker.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM activities")
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
+    try:
+        conn = sqlite3.connect("activity_tracker.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM activities")
+        rows = cursor.fetchall()
+        return rows
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return []
+    except Exception as e:
+        print(f"Error: {e}")
+        return []
+    finally:
+        conn.close()
 
 # Analyze activities
 def analyze_activities():
-    conn = sqlite3.connect("activity_tracker.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT name, SUM(duration) FROM activities GROUP BY name")
-    data = cursor.fetchall()
-    conn.close()
+    try:
+        conn = sqlite3.connect("activity_tracker.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, SUM(duration) FROM activities GROUP BY name")
+        data = cursor.fetchall()
 
-    activities = [item[0] for item in data]
-    durations = [item[1] for item in data]
+        activities = [item[0] for item in data]
+        durations = [item[1] for item in data]
 
-    if not activities:
-        print("No data to analyze.")
-        return
+        if not activities:
+            print("No data to analyze.")
+            return
 
-    # Plot pie chart
-    plt.figure(figsize=(8, 6))
-    plt.pie(durations, labels=activities, autopct='%1.1f%%', startangle=140)
-    plt.title('Activity Distribution')
-    plt.show()
+        # Plot pie chart
+        plt.figure(figsize=(8, 6))
+        plt.pie(durations, labels=activities, autopct='%1.1f%%', startangle=140)
+        plt.title('Activity Distribution')
+        plt.show()
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        conn.close()
 
 # Export data to CSV
 def export_to_csv():
@@ -65,11 +85,14 @@ def export_to_csv():
         print("No data available to export.")
         return
     
-    with open('activities.csv', 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["ID", "Name", "Duration", "Date"])
-        writer.writerows(rows)
-    print("Data exported to activities.csv")
+    try:
+        with open('activities.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["ID", "Name", "Duration", "Date"])
+            writer.writerows(rows)
+        print("Data exported to activities.csv")
+    except IOError as e:
+        print(f"File error: {e}")
 
 # Main menu
 def main():
@@ -114,3 +137,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
