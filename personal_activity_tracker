@@ -1,0 +1,116 @@
+# Personal Activity Tracker
+# Track your activities like football, reading, marathon running, and essay writing.
+
+import sqlite3
+import matplotlib.pyplot as plt
+import csv
+from datetime import datetime
+
+# Database setup
+def init_db():
+    conn = sqlite3.connect("activity_tracker.db")
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS activities (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT,
+                        duration INTEGER,
+                        date TEXT
+                     )''')
+    conn.commit()
+    conn.close()
+
+# Add activity
+def add_activity(name, duration):
+    conn = sqlite3.connect("activity_tracker.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO activities (name, duration, date) VALUES (?, ?, ?)",
+                   (name, duration, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+    conn.commit()
+    conn.close()
+
+# View all activities
+def view_activities():
+    conn = sqlite3.connect("activity_tracker.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM activities")
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+# Analyze activities
+def analyze_activities():
+    conn = sqlite3.connect("activity_tracker.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, SUM(duration) FROM activities GROUP BY name")
+    data = cursor.fetchall()
+    conn.close()
+
+    activities = [item[0] for item in data]
+    durations = [item[1] for item in data]
+
+    if not activities:
+        print("No data to analyze.")
+        return
+
+    # Plot pie chart
+    plt.figure(figsize=(8, 6))
+    plt.pie(durations, labels=activities, autopct='%1.1f%%', startangle=140)
+    plt.title('Activity Distribution')
+    plt.show()
+
+# Export data to CSV
+def export_to_csv():
+    rows = view_activities()
+    if not rows:
+        print("No data available to export.")
+        return
+    
+    with open('activities.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["ID", "Name", "Duration", "Date"])
+        writer.writerows(rows)
+    print("Data exported to activities.csv")
+
+# Main menu
+def main():
+    init_db()
+    while True:
+        print("\n--- Personal Activity Tracker ---")
+        print("1. Add Activity")
+        print("2. View Activities")
+        print("3. Analyze Activities")
+        print("4. Export Data to CSV")
+        print("5. Exit")
+
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            name = input("Enter activity name: ")
+            try:
+                duration = int(input("Enter duration (in minutes): "))
+                if duration <= 0:
+                    print("Duration must be a positive number.")
+                    continue
+                add_activity(name, duration)
+                print("Activity added successfully!")
+            except ValueError:
+                print("Invalid input. Please enter a valid number for duration.")
+        elif choice == '2':
+            activities = view_activities()
+            if not activities:
+                print("No activities found.")
+            else:
+                for activity in activities:
+                    print(f"ID: {activity[0]}, Name: {activity[1]}, Duration: {activity[2]} mins, Date: {activity[3]}")
+        elif choice == '3':
+            analyze_activities()
+        elif choice == '4':
+            export_to_csv()
+        elif choice == '5':
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    main()
